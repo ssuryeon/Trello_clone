@@ -6,6 +6,9 @@ import Price from './Price';
 import Chart from './Chart';
 import {fetchCoinInfo, fetchCoinTickers} from '../api';
 import {useQuery} from 'react-query';
+import {Helmet} from 'react-helmet';
+import {isDarkAtom} from '../atoms';
+import {useRecoilValue} from 'recoil';
 
 interface RouteParams {
     coinId: string;
@@ -37,7 +40,7 @@ const Loader = styled.span`
 `;
 
 const Overview = styled.div`
-    background-color: #222;
+    background-color: white;
     color: ${(props) => props.theme.textColor};
     padding: 20px;
     border-radius: 15px;
@@ -54,10 +57,14 @@ const OverviewItem = styled.div`
         margin-bottom: 5px;
         text-transform: uppercase;
     }
+    span:nth-child(2){
+        font-size: 13px;
+    }
     width: 20%;
 `;
 const Description = styled.p`
     margin: 20px 0px;
+    line-height: 1.5;
 `;
 
 interface InfoData {
@@ -124,23 +131,30 @@ const Tabs = styled.div`
 const Tab = styled.span<{isActive : boolean}>`
     color: ${props => props.isActive? props.theme.accentColor : props.theme.textColor};
     text-transform: uppercase;
-    background-color: #222;
+    background-color: white;
     text-align: center;
     padding: 10px 0;
     border-radius: 10px;
 `;
 
+
 function Coin(){
     const {coinId} = useParams<RouteParams>();
     console.log(coinId);
     const {isLoading: infoLoading, data: infoData} = useQuery<InfoData>(['info', coinId], () => fetchCoinInfo(coinId));
-    const {isLoading: tickerLoading, data: priceData} = useQuery<PriceData>(['ticker', coinId], () => fetchCoinTickers(coinId));
+    const {isLoading: tickerLoading, data: priceData} = useQuery<PriceData>(['ticker', coinId], () => fetchCoinTickers(coinId), {
+        refetchInterval: 10000,
+    });
     const {state} = useLocation<RouteState>();
     const loading = infoLoading || tickerLoading;
     const priceMatch = useRouteMatch(`/${coinId}/price`);
     const chartMatch = useRouteMatch(`/${coinId}/chart`);
+    const isDark = useRecoilValue(isDarkAtom);
     return(
         <Container>
+            <Helmet>
+                <title>{state?.name ? state?.name : loading? "Loading..." : infoData?.name}</title>
+            </Helmet>
             <Header>
                 <Title>{state?.name ? state?.name : loading? "Loading..." : infoData?.name}</Title>
             </Header>
@@ -160,14 +174,14 @@ function Coin(){
                             <span>{infoData?.open_source ? "Yes" : "No"}</span>
                         </OverviewItem>
                     </Overview>
-                    <Description>{infoData?.description}</Description>
+                    <Description style={{color: isDark? "white" : "black"}}>{infoData?.description}</Description>
                     <Overview>
                         <OverviewItem>
                             <span>TOTAL SUPPLY:</span>
                             <span>{priceData?.total_supply}</span>
                         </OverviewItem>
                         <OverviewItem>
-                            <span>MAX SUPPLY</span>
+                            <span>MAX SUPPLY:</span>
                             <span>{priceData?.max_supply}</span>
                         </OverviewItem>
                     </Overview>
@@ -176,12 +190,15 @@ function Coin(){
                             <Link to={`/${coinId}/chart`}>Chart</Link>
                         </Tab>
                         <Tab isActive={priceMatch !== null}>
-                            <Link to={`/${coinId}/price`}>Price</Link>
+                            <Link to={{
+                                pathname: `/${coinId}/price`,
+                                state: {currentPrice: priceData?.quotes.USD.price},
+                            }}>Price</Link>
                         </Tab>
                     </Tabs>
                     <Switch>
                         <Route path={`/:${coinId}/price`}>
-                            <Price />
+                            <Price coinId={coinId}/>
                         </Route>
                         <Route path={`/:${coinId}/chart`}>
                             <Chart coinId={coinId}/>
