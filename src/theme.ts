@@ -2,7 +2,7 @@ import {DefaultTheme} from 'styled-components';
 
 export const Darktheme:DefaultTheme = {
     bgColor: '#2c3e50',
-    textColor: 'black',
+    textColor: 'white',
     accentColor: '#7d5fff',
 }
 
