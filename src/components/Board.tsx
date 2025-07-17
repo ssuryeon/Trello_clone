@@ -1,4 +1,4 @@
-import {Droppable, Draggable} from '@hello-pangea/dnd';
+import {Droppable} from '@hello-pangea/dnd';
 import DraggableCard from './DraggableCard';
 import {styled} from 'styled-components';
 import {useRef} from 'react';
@@ -6,10 +6,11 @@ import {IToDo, toDoState} from './atoms'
 import {useForm} from'react-hook-form';
 import { useSetRecoilState } from 'recoil';
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{isDragging: boolean}>`
 	width: 300px;
 	padding-top: 10px;
-	background-color: ${(props) => props.theme.boardColor};
+	background-color: ${(props) => props.isDragging? '#bdc3c7' : props.theme.boardColor};
+	transition: 0.3s;
 	border-radius: 5px;
 	min-height: 300px;
 	display: flex;
@@ -46,6 +47,7 @@ interface IBoard {
     toDos: IToDo[],
     boardId: string,
 	index: number,
+	isDragging: boolean,
 }
 
 const Form = styled.form`
@@ -57,6 +59,8 @@ const Form = styled.form`
 		border: none;
 		padding: 5px 8px;
 		border-radius: 5px;
+		outline: none;
+		margin-bottom: 8px;
 	}
 `;
 
@@ -64,7 +68,7 @@ interface IForm {
 	toDo: string,
 }
 
-function Board({toDos, boardId, index}:IBoard){
+function Board({toDos, boardId, isDragging}:IBoard){
 	const setToDos = useSetRecoilState(toDoState);
 	const {register, setValue, handleSubmit} = useForm<IForm>();
 	const onValid = ({toDo}:IForm) => {
@@ -83,43 +87,39 @@ function Board({toDos, boardId, index}:IBoard){
 		setValue("toDo", "");
 	}
     return (
-		<Draggable draggableId={boardId + "board"} index={index}>
-			{(magic) => (
-				<Wrapper ref={magic.innerRef} {...magic.draggableProps} {...magic.dragHandleProps}>
-					<Title>{boardId}</Title>
-					<Form onSubmit={handleSubmit(onValid)}>
-						<input
-							{...register('toDo', {required: true})}
-							type="text" 
-							placeholder={`Add task on ${boardId}`}
-						></input>
-					</Form>
-					<Droppable droppableId={boardId} type="card">
-						{(magic, info) => 
-							<Area
-								isDraggingOver={info.isDraggingOver}
-								isDraggingFromThisWith={Boolean(info.draggingFromThisWith)}
-								ref={magic.innerRef} 
-								{...magic.droppableProps}
-							>
-								{
-									toDos.map((toDo, index) => (
-										<DraggableCard 
-											key={toDo.id} 
-											toDoText={toDo.text} 
-											toDoId={toDo.id} 
-											index={index}
-										/>
-									))
-								}
-								{magic.placeholder /* 드래그 중인 아이템이 차지하던 공간을 임시로 유지해 줌 */} 
-							</Area>
-						}
-					</Droppable>
-				</Wrapper>
-			)}
-		</Draggable>
-    )
-}
+			<Wrapper isDragging={isDragging}>
+				<Title>{boardId}</Title>
+				<Form onSubmit={handleSubmit(onValid)}>
+					<input
+						{...register('toDo', {required: true})}
+						type="text" 
+						placeholder={`Add task on ${boardId}`}
+					></input>
+				</Form>
+				<Droppable droppableId={boardId} type="card">
+					{(magic, info) => 
+						<Area
+							isDraggingOver={info.isDraggingOver}
+							isDraggingFromThisWith={Boolean(info.draggingFromThisWith)}
+							ref={magic.innerRef} 
+							{...magic.droppableProps}
+						>
+							{
+								toDos.map((toDo, index) => (
+									<DraggableCard 
+										key={toDo.id} 
+										toDoText={toDo.text} 
+										toDoId={toDo.id} 
+										index={index}
+									/>
+								))
+							}
+							{magic.placeholder /* 드래그 중인 아이템이 차지하던 공간을 임시로 유지해 줌 */} 
+						</Area>
+					}
+				</Droppable>
+			</Wrapper>
+    	)
+	}
 
 export default Board;

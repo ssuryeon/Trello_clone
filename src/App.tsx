@@ -1,4 +1,4 @@
-import {DragDropContext, DropResult, Droppable} from '@hello-pangea/dnd'
+import {DragDropContext, DropResult, Droppable, Draggable} from '@hello-pangea/dnd'
 import {styled} from 'styled-components';
 import {toDoState} from './components/atoms';
 import {useRecoilState} from 'recoil';
@@ -17,10 +17,15 @@ const Wrapper = styled.div`
 	height: 100vh;
 `;
 
-const Boards = styled.div`
+interface IBoards {
+	isDraggingover: boolean,
+	isDraggingFromWith: boolean,
+}
+
+const Boards = styled.div<IBoards>`
 	display: flex;
-	justify-content: center;
 	align-items: flex-start;
+	justify-content: ${(props) => (props.isDraggingover || props.isDraggingFromWith) ? 'flex-start' : 'center'};
 	width: 100%;
 	gap: 10px;
 `;
@@ -29,12 +34,16 @@ const BoardWrapper = styled.div`
 	padding: 15px;
 	width: 330px;
 	height: 100%;
-	border: 1px solid red;
 `;
 
-const TrashcanWrapper = styled.div`
+const TrashcanWrapper = styled.div<{isDraggingOver: boolean}>`
 	// border: 1px solid red;
 	margin-top: 30px;
+	svg {
+		font-size: 30px;
+		color: ${(props) => props.isDraggingOver ? 'gold' : 'white'};
+		transition: 0.5s;
+	}
 `;
 
 function App() {
@@ -93,28 +102,48 @@ function App() {
 				})
 			}
 		}
+		else if(source.droppableId === 'boards'){
+			setToDos((allBoards) => {
+				const boardCopy = Object.entries(allBoards);
+				const taskBoard = boardCopy[source.index];
+				boardCopy.splice(source.index, 1);
+				boardCopy.splice(destination.index, 0, taskBoard);
+				const updated = Object.fromEntries(boardCopy)
+				localStorage.setItem('allBoards', JSON.stringify(updated))
+				return updated;
+			})
+		}
 	}; 
   return (
 	<DragDropContext onDragEnd={onDragEnd}>
 		<Wrapper>
-			<Boards>
-				{
-					Object.keys(toDos).map((boardId, index) =>
-						<Droppable droppableId={boardId + "boardarea"} type="board" direction="horizontal">
-							{(magic) => (
-								<BoardWrapper {...magic.droppableProps} ref={magic.innerRef}>
-									<Board boardId={boardId} toDos={toDos[boardId]} index={index}/>
-									{/* {magic.placeholder} */}
-								</BoardWrapper>
-							)}
-						</Droppable>
-					)
-				}
-			</Boards>
+		<Droppable droppableId="boards" type="board" direction="horizontal">
+			{(magic, info) => (
+				<Boards 
+					{...magic.droppableProps} 
+					ref={magic.innerRef}
+					isDraggingover={info.isDraggingOver}
+					isDraggingFromWith={Boolean(info.draggingFromThisWith)}
+				>
+					{
+						Object.keys(toDos).map((boardId, index) =>
+							<Draggable draggableId={boardId} index={index} key={boardId}>
+								{(magic, snapshot) => (
+									<BoardWrapper ref={magic.innerRef} {...magic.draggableProps} {...magic.dragHandleProps}>
+										<Board boardId={boardId} toDos={toDos[boardId]} index={index} isDragging={snapshot.isDragging}/>
+										{/* {magic.placeholder} */}
+									</BoardWrapper>
+								)}
+							</Draggable>
+						)
+					}
+				</Boards>
+			)}
+			</Droppable>
 			<Droppable droppableId='trashcan' type="card">
-				{(magic) => (
-					<TrashcanWrapper {...magic.droppableProps} ref={magic.innerRef} >
-						<FontAwesomeIcon icon={faTrashCan} style={{ fontSize: "30px"}}/>
+				{(magic, info) => (
+					<TrashcanWrapper {...magic.droppableProps} ref={magic.innerRef} isDraggingOver={info.isDraggingOver}>
+						<FontAwesomeIcon icon={faTrashCan}/>
 						<div style={{ display: 'none' }}>{magic.placeholder}</div>
 					</TrashcanWrapper>
 				)}
