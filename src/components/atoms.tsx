@@ -1,32 +1,20 @@
 import {atom, selector} from 'recoil';
 
-export enum Categories {
-    "TO_DO" = "TO_DO",
-    "DOING" = "DOING",
-    "DONE" = "DONE",
-}
-
 export interface IToDo {
     text: string,
     id: number,
-    category: Categories,
 }
 
-export const toDoState = atom<IToDo[]>({
+interface ItoDoState {
+    [key:string]: IToDo[],
+}
+// atom의 default 값이 string인 key와 sting[]인 value를 가지는 객체이다
+
+export const toDoState = atom<ItoDoState>({
     key: 'toDos',
-    default: [],
-})
-
-export const toDoSelector = selector({
-    key: "toDoSelector",
-    get: ({get}) => { // 파라미터에 있는 option 객체에서 get 함수를 불러옴
-        const toDos = get(toDoState);
-        const category = get(categoryState);
-        return toDos.filter(toDo => toDo.category === category); // 특정 카테고리의 todo만 리턴함
-    }
-})
-
-export const categoryState = atom<Categories>({
-    key: 'category',
-    default: Categories.TO_DO,
+    default: {
+        "To Do": [],
+        Doing: [],
+        Done: [],
+    },
 })
