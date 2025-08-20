@@ -25,7 +25,7 @@ interface IBoards {
 const Boards = styled.div<IBoards>`
 	display: flex;
 	align-items: flex-start;
-	justify-content: ${(props) => (props.isDraggingover || props.isDraggingFromWith) ? 'flex-start' : 'center'};
+	justify-content: center;
 	width: 100%;
 	gap: 10px;
 `;
@@ -131,12 +131,12 @@ function App() {
 								{(magic, snapshot) => (
 									<BoardWrapper ref={magic.innerRef} {...magic.draggableProps} {...magic.dragHandleProps}>
 										<Board boardId={boardId} toDos={toDos[boardId]} index={index} isDragging={snapshot.isDragging}/>
-										{/* {magic.placeholder} */}
 									</BoardWrapper>
 								)}
 							</Draggable>
 						)
 					}
+					{magic.placeholder}
 				</Boards>
 			)}
 			</Droppable>
